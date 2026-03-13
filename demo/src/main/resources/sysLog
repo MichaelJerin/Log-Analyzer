@@ -1,0 +1,33 @@
+echo "<34>Jan 10 10:23:01 myserver sshd: Failed password for root" | nc -u localhost 514
+```
+
+| Part | Meaning |
+|---|---|
+| `echo "..."` | Creates a fake syslog message text |
+| `\|` | Pipes that text into the next command |
+| `nc` | Netcat — a tool that sends raw network data |
+| `-u` | Use UDP (not TCP) |
+| `localhost` | Send to your own computer |
+| `514` | Send to port 514 — where your listener is waiting |
+
+This simulates a real device sending a syslog message to your program, without needing an actual router or server.
+
+---
+
+## Full Flow Diagram
+```
+Router/Firewall/Server          Your Program (port 514)
+        │                               │
+        │  UDP packet →→→→→→→→→→→→→→→  │
+        │  "<34>Jan 10 ERROR ..."       │
+        │                         socket.receive()
+        │                               │
+        │                         rawMessage = extract text
+        │                               │
+        │                         senderIP = "192.168.1.1"
+        │                               │
+        │                         parser.parse()
+        │                               │
+        │                         InMemoryLogStore.addLog()
+        │                               │
+        │                         back to waiting...

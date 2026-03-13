@@ -1,0 +1,42 @@
+monitorThread.setDaemon(true);
+monitorThread.setName("log-monitor-thread");
+monitorThread.start();
+```
+- **`setDaemon(true)`** — Marks this as a background (daemon) thread. When the main app shuts down, the JVM won't wait for daemon threads to finish — it just kills them. Perfect for a watcher that has no critical work to complete.
+- **`setName(...)`** — Names the thread for easier debugging in thread dumps/profilers.
+- **`start()`** — *Now* the thread actually begins executing. Everything before this was just setup.
+
+---
+
+## Summary Flow Diagram
+```
+monitorLogFile() called
+        │
+        ▼
+  Create Thread (job description)
+        │
+        ▼
+  thread.start() ──────────────────────────────────────────┐
+        │                                                   │
+  Main app continues                          Background Thread runs
+  (serves requests, etc.)                            │
+                                              Bookmark end of file
+                                                      │
+                                              ┌───── Loop ──────┐
+                                              │                 │
+                                         File grew?        Sleep 2s
+                                              │
+                                         seek(bookmark)
+                                              │
+                                         Read new lines
+                                              │
+                                         Parse & store
+                                              │
+                                         Update bookmark
+                                              └──── repeat ─────┘
+                                                      │
+                                              stopMonitoring() called
+                                                      │
+                                              running=false + interrupt
+                                                      │
+                                              Thread exits cleanly
